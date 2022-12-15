@@ -51,15 +51,12 @@ std_msgs
  add_message_files(
    FILES
    JointAngles.msg
+   Gripper_cmd.msg
 #   Message2.msg
  )
 
 ## Generate services in the 'srv' folder
- add_service_files(
-   FILES
-   Attach.srv
-   SetStatic.srv
- )
+
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -138,9 +135,9 @@ include_directories(
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
  add_executable(demo src/demo.cpp)
-  add_executable(add_collisions src/add_collisions.cpp)
+ add_executable(add_collisions src/add_collisions.cpp)
 add_executable(scrabble_robot_control_node src/scrabble_robot_control.cpp)
-add_executable(unity_ros_node src/unity_ros_sub.cpp)
+
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -161,9 +158,7 @@ add_executable(unity_ros_node src/unity_ros_sub.cpp)
    target_link_libraries(scrabble_robot_control_node
    ${catkin_LIBRARIES}
  )
-   target_link_libraries(unity_ros_node
-   ${catkin_LIBRARIES}
- )
+ 
 
 #############
 ## Install ##
@@ -174,10 +169,12 @@ add_executable(unity_ros_node src/unity_ros_sub.cpp)
 
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
-# catkin_install_python(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-# )
+ catkin_install_python(PROGRAMS
+   scripts/Unity_Gripper.py
+   scripts/unity_moveit.py
+   scripts/Unity_UR5e.py
+   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+ )
 
 ## Mark executables for installation
 ## See http://docs.ros.org/melodic/api/catkin/html/howto/format1/building_executables.html

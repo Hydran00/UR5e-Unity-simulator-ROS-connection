@@ -26,9 +26,12 @@ public class Publisher : MonoBehaviour
 
     // ROS Connector
     ROSConnection m_Ros;
+    public float publishMessageFrequency = 0.0001f;
+    private float timeElapsed;
 
     void Start()
     {
+        timeElapsed=0f;
          //Get ROS connection static instance
         m_Ros = ROSConnection.GetOrCreateInstance();
         m_Ros.RegisterPublisher<JointAnglesMsg>(m_TopicName); 
@@ -56,8 +59,13 @@ public class Publisher : MonoBehaviour
     double Rad2Deg(double radx){
         return radx * (180.0f/3.141592653589793238463f);
     }
-    void  FixedUpdate()
+    void  Update()
     {
-    	Publish();
+        timeElapsed += Time.deltaTime;
+        if (timeElapsed > publishMessageFrequency)
+        {
+    	    Publish();
+            timeElapsed=0;
+        }
     }
 }

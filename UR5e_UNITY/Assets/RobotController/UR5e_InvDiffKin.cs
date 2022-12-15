@@ -13,6 +13,7 @@ public class UR5e_InvDiffKin
 
     private UR5e_Forward FK;
 
+
     private ArticulationBody[] JointList;
 
     private GameObject target;
@@ -35,7 +36,7 @@ public class UR5e_InvDiffKin
     private GameObject ur5e;
 
     //define convergence parameter
-    private const double linear_K= 0.001;
+    private const double linear_K= 0.01;
     private const double angular_K= 0.1;
 
     //z offset

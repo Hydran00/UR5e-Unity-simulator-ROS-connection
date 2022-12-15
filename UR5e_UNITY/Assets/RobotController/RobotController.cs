@@ -28,6 +28,10 @@ public class RobotController : MonoBehaviour
 
     private ArticulationBody[] JointList;
 
+    private ArticulationBody[] GripperJoints;
+
+    private bool gripper_open;
+
     private Color[] prevColor;
 
     private int previousIndex;
@@ -81,7 +85,7 @@ public class RobotController : MonoBehaviour
         current_frame = 0;
         frame_num = 0;
         res = new MatrixXD(new double[10, 6]);
-        
+        gripper_open = true;
     }
 
     void Start()
@@ -91,6 +95,7 @@ public class RobotController : MonoBehaviour
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
         int defDyanmicVal = 10;
         JointList = new ArticulationBody[6];
+        GripperJoints = new ArticulationBody[2];
         foreach (ArticulationBody joint in articulationChain)
         {
             joint.gameObject.AddComponent<JointControl>();
@@ -118,17 +123,25 @@ public class RobotController : MonoBehaviour
                 case "wrist_3_link":
                     JointList[5] = joint; 
                     break;
+                case "soft_robotics_right_finger_link1":
+                    GripperJoints[0] = joint;
+                    break;
+                case "soft_robotics_left_finger_link1":
+                    GripperJoints[1] = joint;
+                    break;
                 default:
                     break;
             }
         q_sols = new double[6];
         }
         IDK = new UR5e_InvDiffKin(Target, ur5e);
+        gripper_open =false;
     }
 
     private void FixedUpdate()
     {
         MoveRobot();
+        MoveGripper();
     }
 
     void UpdateControlType(JointControl joint)
@@ -226,7 +239,8 @@ public class RobotController : MonoBehaviour
         current_frame = (current_frame + 1)% IDK.num_steps_per_frame;
         
     }
-    void check_target_pos(){
+    void check_target_pos()
+    {
         
         //limit x position
         if(Target.transform.position.x > 0.51){
@@ -253,40 +267,9 @@ public class RobotController : MonoBehaviour
             Target.transform.position = new Vector3(Target.transform.position.x, Target.transform.position.y,-0.46f);
         }
     }
-    /*
-    void prepare_matrix()
+    void MoveGripper()
     {
-        for (int i = 0; i < 16; i++)
-        {
-            T[i] = 0;
-        }
-        double H_TABLE = 1.79;
-        T[3] = Target.transform.position.x;
-        T[7] = -Target.transform.position.z;
-        T[11] = H_TABLE - Target.transform.position.y;
-        Matrix4x4 homogeneous_trans_matrix =
-            Matrix4x4
-                .TRS(Vector3.zero,
-                ConvertToUnity(Target.transform.rotation),
-                Vector3.one);
 
-        T[0] = homogeneous_trans_matrix[0, 0];
-        T[1] = homogeneous_trans_matrix[0, 1];
-        T[2] = homogeneous_trans_matrix[0, 2];
-        T[4] = homogeneous_trans_matrix[1, 0];
-        T[5] = homogeneous_trans_matrix[1, 1];
-        T[6] = homogeneous_trans_matrix[1, 2];
-        T[8] = homogeneous_trans_matrix[2, 0];
-        T[9] = homogeneous_trans_matrix[2, 1];
-        T[10] = homogeneous_trans_matrix[2, 2];
-
-        T[15] = 1;
+ 
     }
-
-    //convert RH to LH coordinates for the homogeneous transf. matrix
-    Quaternion ConvertToUnity(Quaternion input)
-    {
-        return new Quaternion(-input.x, input.z, input.y, input.w);
-    }*/
-
 }

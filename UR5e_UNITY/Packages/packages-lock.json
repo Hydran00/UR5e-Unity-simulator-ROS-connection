@@ -37,15 +37,6 @@
         "com.unity.testtools.codecoverage": "1.0.1"
       }
     },
-    "com.unity.feature.vr": {
-      "version": "1.0.0",
-      "depth": 0,
-      "source": "builtin",
-      "dependencies": {
-        "com.unity.xr.oculus": "3.0.2",
-        "com.unity.xr.openxr": "1.5.3"
-      }
-    },
     "com.unity.ide.rider": {
       "version": "3.0.16",
       "depth": 0,
@@ -268,17 +259,6 @@
       "source": "registry",
       "dependencies": {
         "com.unity.xr.management": "4.2.0"
-      },
-      "url": "https://packages.unity.com"
-    },
-    "com.unity.xr.openxr": {
-      "version": "1.5.3",
-      "depth": 1,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.xr.management": "4.0.1",
-        "com.unity.xr.legacyinputhelpers": "2.1.2",
-        "com.unity.inputsystem": "1.4.2"
       },
       "url": "https://packages.unity.com"
     },

@@ -14,4 +14,5 @@ def main(args=None):
 
 
 if __name__ == "__main__":
+    print("\033[1m\033[93mTCP endpoint started :)\033[0m")
     main()
