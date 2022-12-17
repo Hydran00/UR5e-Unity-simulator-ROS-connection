@@ -5,10 +5,6 @@ using System;
 using EigenCore.Core.Dense;
 public class UR5e_Forward
 {
-    Utils Utils;
-    public UR5e_Forward(){
-        Utils = new Utils();
-    }
     public MatrixXD forward(VectorXD Th){
         VectorXD A = new VectorXD(new double[]{0f, -0.425f, -0.3922f, 0f, 0f, 0f});
         VectorXD D = new VectorXD(new double[]{0.1625f, 0f, 0f, 0.1333f, 0.0997f, 0.16f+0.0996f});
@@ -54,13 +50,6 @@ public class UR5e_Forward
             {-Math.Sin(Th.Get(5)), -Math.Cos(Th.Get(5)), 0, 0},
             {0, 0, 0, 1}
         });
-        
-        //T10f*T21f*T32f*T43f*T54f*T65f;
-        /*MatrixXD T = Utils.MultiplyMatrix(T10f,T21f);
-        T = Utils.MultiplyMatrix(T,T32f);
-        T = Utils.MultiplyMatrix(T,T43f);
-        T = Utils.MultiplyMatrix(T,T54f);
-        T = Utils.MultiplyMatrix(T,T65f);*/
         MatrixXD T = MultiplyMatrix(T10f,T21f);
         T = MultiplyMatrix(T,T32f);
         T = MultiplyMatrix(T,T43f);
@@ -98,7 +87,6 @@ public class UR5e_Forward
             return kHasil;
         }
     }
-    // C# program to find adjoint and inverse of a matrix
     }  
       
     

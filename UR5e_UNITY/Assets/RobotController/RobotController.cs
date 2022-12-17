@@ -1,6 +1,7 @@
 using EigenCore.Core.Dense;
 using UnityEngine;
 using Unity.Robotics;
+using Unity.Robotics.UrdfImporter;
 using Unity.Robotics.UrdfImporter.Control;
 
 public class RobotController : MonoBehaviour
@@ -28,9 +29,7 @@ public class RobotController : MonoBehaviour
 
     private ArticulationBody[] JointList;
 
-    private ArticulationBody[] GripperJoints;
-
-    private bool gripper_open;
+    private UrdfJointRevolute[] Real_Robot_Joints;
 
     private Color[] prevColor;
 
@@ -38,9 +37,22 @@ public class RobotController : MonoBehaviour
 
     public GameObject ur5e;
 
+    //real ur5e is the current state(feedback) of the real robot
+    public GameObject real_ur5e;
+
+    public static readonly string[]
+        LinkNames =
+        {
+            "world/base_link/base_link_inertia/shoulder_link",
+            "/upper_arm_link",
+            "/forearm_link",
+            "/wrist_1_link",
+            "/wrist_2_link",
+            "/wrist_3_link"
+        };
+
     //[InspectorReadOnly(hideInEditMode: true)]
     //public string selectedJoint;
-
     [HideInInspector]
     public int selectedIndex;
 
@@ -68,10 +80,6 @@ public class RobotController : MonoBehaviour
     [Tooltip("Color to highlight the currently selected Join")]
     public Color highLightColor = new Color(1, 0, 0, 1);
 
-    private double[] q_sols;
-
-    private double[] T;
-
     //The old controller
     private Controller controller;
 
@@ -80,22 +88,19 @@ public class RobotController : MonoBehaviour
         this.gameObject.AddComponent(typeof (Controller));
         controller = GetComponent<Controller>();
         SetControllerValues();
-        float[] A = new float[] { 0.5f, 0.5f, 0.5f, 0.5f, 0.5f, 1f };
-        T = new double[16];
         current_frame = 0;
         frame_num = 0;
         res = new MatrixXD(new double[10, 6]);
-        gripper_open = true;
     }
 
     void Start()
-    {   
+    {
         previousIndex = selectedIndex = 1;
         this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
         int defDyanmicVal = 10;
         JointList = new ArticulationBody[6];
-        GripperJoints = new ArticulationBody[2];
+        Real_Robot_Joints = new UrdfJointRevolute[6];
         foreach (ArticulationBody joint in articulationChain)
         {
             joint.gameObject.AddComponent<JointControl>();
@@ -103,45 +108,49 @@ public class RobotController : MonoBehaviour
             joint.angularDamping = defDyanmicVal;
             ArticulationDrive currentDrive = joint.xDrive;
             currentDrive.forceLimit = forceLimit;
+            joint.xDrive = currentDrive;
             switch (joint.name)
             {
                 case "shoulder_link":
-                    JointList[0] = joint; 
+                    JointList[0] = joint;
                     break;
-                case "upper_arm_link": 
-                    JointList[1] = joint; 
-                    break;  
-                case "forearm_link": 
-                    JointList[2] = joint; 
+                case "upper_arm_link":
+                    JointList[1] = joint;
+                    break;
+                case "forearm_link":
+                    JointList[2] = joint;
                     break;
                 case "wrist_1_link":
-                    JointList[3] = joint; 
+                    JointList[3] = joint;
                     break;
                 case "wrist_2_link":
-                    JointList[4] = joint; 
+                    JointList[4] = joint;
                     break;
                 case "wrist_3_link":
-                    JointList[5] = joint; 
-                    break;
-                case "soft_robotics_right_finger_link1":
-                    GripperJoints[0] = joint;
-                    break;
-                case "soft_robotics_left_finger_link1":
-                    GripperJoints[1] = joint;
+                    JointList[5] = joint;
                     break;
                 default:
                     break;
             }
-        q_sols = new double[6];
+        }
+
+        //fill real robot joint
+        var linkName = string.Empty;
+        for (var i = 0; i < 6; i++)
+        {
+            linkName += LinkNames[i];
+            Real_Robot_Joints[i] =
+                real_ur5e
+                    .transform
+                    .Find(linkName)
+                    .GetComponent<UrdfJointRevolute>();
         }
         IDK = new UR5e_InvDiffKin(Target, ur5e);
-        gripper_open =false;
     }
 
     private void FixedUpdate()
     {
         MoveRobot();
-        MoveGripper();
     }
 
     void UpdateControlType(JointControl joint)
@@ -175,101 +184,180 @@ public class RobotController : MonoBehaviour
     void MoveRobot()
     {
         check_target_pos();
-            
-        //set robot in a safe position to avoid singularity
-        if (frame_num == 1)
+
+        //set controllable virtual robot in the same position of real robot one
+        if (frame_num < 150)
         {
+            init_angles();
+            frame_num++;
+            return;
+        }
+        else
+        {
+            //Compute inv. diff. kinematics 
+            res = IDK.ComputeInvDiffKin();
+
+            int i = 0;
+            //apply computed joints angles
             foreach (ArticulationBody joint in JointList)
             {
-                ArticulationDrive currentDrive = new ArticulationDrive();
-                switch (joint.name)
-                {
-                    case "shoulder_link":
-                        currentDrive = joint.xDrive;
-                        currentDrive.target = 69f;
-                        joint.xDrive = currentDrive;
-                        break;
-                    case "upper_arm_link":
-                        currentDrive = joint.xDrive;
-                        currentDrive.target = -102f;
-                        joint.xDrive = currentDrive;
-                        break;
-                    case "forearm_link":
-                        currentDrive = joint.xDrive;
-                        currentDrive.target = 109f;
-                        joint.xDrive = currentDrive;
-                        break;
-                    case "wrist_1_link":
-                        currentDrive = joint.xDrive;
-                        currentDrive.target = -102f;
-                        joint.xDrive = currentDrive;
-                        break;
-                    case "wrist_2_link":
-                        currentDrive = joint.xDrive;
-                        currentDrive.target = 89f;
-                        joint.xDrive = currentDrive;
-                        break;
-                    case "wrist_3_link":
-                        currentDrive = joint.xDrive;
-                        currentDrive.target = 9f;
-                        joint.xDrive = currentDrive;
-                        break;
-                    default:
-                        break;
-                }
+                ArticulationDrive currentDrive = joint.xDrive;
+                currentDrive.target = (float) Rad2Deg(res.Get(0, i));
+                joint.xDrive = currentDrive;
+                i++;
             }
-            frame_num++;
-            return;
         }
-        if (frame_num < 60){
-            frame_num++;
-            return;
-        }  
-        if (current_frame == 0)
-        {
-            res = IDK.ComputeInvDiffKin();
-        }
-        int i=0;
-        foreach (ArticulationBody joint in JointList){
-            ArticulationDrive currentDrive = joint.xDrive;
-            currentDrive.target = (float)Rad2Deg(res.Get(current_frame, i));
-            joint.xDrive = currentDrive;
-            i++;
-        }
-        current_frame = (current_frame + 1)% IDK.num_steps_per_frame;
-        
     }
+    
+    
+    
+    
+    
+    
+    //limit target's position space
     void check_target_pos()
     {
-        
         //limit x position
-        if(Target.transform.position.x > 0.51){
-            Target.transform.position = new Vector3(0.51f, Target.transform.position.y, Target.transform.position.z);
-        
+        if (Target.transform.position.x > 0.51)
+        {
+            Target.transform.position =
+                new Vector3(0.51f,
+                    Target.transform.position.y,
+                    Target.transform.position.z);
         }
-        if (Target.transform.position.x <-0.51){
-            Target.transform.position = new Vector3(-0.51f, Target.transform.position.y, Target.transform.position.z);
+        if (Target.transform.position.x < -0.51)
+        {
+            Target.transform.position =
+                new Vector3(-0.51f,
+                    Target.transform.position.y,
+                    Target.transform.position.z);
         }
+
         //limit y position
-        if(Target.transform.position.y > 1.3){
-            Target.transform.position = new Vector3(Target.transform.position.x, 1.3f, Target.transform.position.z);
-        
+        if (Target.transform.position.y > 1.3)
+        {
+            Target.transform.position =
+                new Vector3(Target.transform.position.x,
+                    1.3f,
+                    Target.transform.position.z);
         }
-        if (Target.transform.position.y <0.85){
-            Target.transform.position = new Vector3(Target.transform.position.x, 0.85f, Target.transform.position.z);
+        if (Target.transform.position.y < 0.85)
+        {
+            Target.transform.position =
+                new Vector3(Target.transform.position.x,
+                    0.85f,
+                    Target.transform.position.z);
         }
+
         //limit z position
-        if(Target.transform.position.z > 0.05){
-            Target.transform.position = new Vector3(Target.transform.position.x, Target.transform.position.y,0.05f);
-        
+        if (Target.transform.position.z > 0.05)
+        {
+            Target.transform.position =
+                new Vector3(Target.transform.position.x,
+                    Target.transform.position.y,
+                    0.05f);
         }
-        if (Target.transform.position.z <-0.46){
-            Target.transform.position = new Vector3(Target.transform.position.x, Target.transform.position.y,-0.46f);
+        if (Target.transform.position.z < -0.46)
+        {
+            Target.transform.position =
+                new Vector3(Target.transform.position.x,
+                    Target.transform.position.y,
+                    -0.46f);
         }
     }
-    void MoveGripper()
-    {
+    
+    
+    
+    
+    
+    void init_angles(){
+            //check if we are connected to real robot (that means at least one joint is not zero)
+            bool connected_to_real_robot = false;
+            for (int j = 0; j < 6; j++)
+            {
+                if (Mathf.Abs(Real_Robot_Joints[j].GetPosition()) > 0.001)
+                {
+                    Debug.Log("connected because "+j+" is "+Real_Robot_Joints[j].GetPosition());
+                    connected_to_real_robot = true;
+                    break;
+                }
+            }
 
- 
+            //Assign hardcoded values to joint when we don't have real robot joint published yet
+            if (!connected_to_real_robot)
+            {
+                set_harcoded_angles();
+            }
+            else
+            //if we're connected to robot then apply real robot angles to simulated robot to start simulation safely
+            {
+                int j = 0;
+                foreach (ArticulationBody joint in JointList)
+                {
+                    ArticulationDrive currentDrive = joint.xDrive;
+                    currentDrive.target =
+                        (float) Rad2Deg(Real_Robot_Joints[j].GetPosition());
+                    joint.xDrive = currentDrive;
+                    j++;
+                }
+
+                //move target in end effector position for safety reasons
+                VectorXD qk = VectorXD.Zeros(6);
+                for (int k = 0; k < 6; k++)
+                {
+                    qk.Set(k, Real_Robot_Joints[k].GetPosition());
+                }
+
+                //need to compute fk to get ee's current position
+                MatrixXD fk_res = IDK.FK.forward(qk);
+                Vector3 pos =
+                    new Vector3((float) - fk_res.Get(0, 3),
+                        1.79f - (float) fk_res.Get(2, 3),
+                        (float) fk_res.Get(1, 3));
+                Debug.Log (pos);
+                Target.transform.position = pos;
+            }
+    }
+    void set_harcoded_angles()
+    {
+        foreach (ArticulationBody joint in JointList)
+        {
+            ArticulationDrive currentDrive = new ArticulationDrive();
+            switch (joint.name)
+            {
+                case "shoulder_link":
+                    currentDrive = joint.xDrive;
+                    currentDrive.target = -91f;
+                    joint.xDrive = currentDrive;
+                    break;
+                case "upper_arm_link":
+                    currentDrive = joint.xDrive;
+                    currentDrive.target = -60f;
+                    joint.xDrive = currentDrive;
+                    break;
+                case "forearm_link":
+                    currentDrive = joint.xDrive;
+                    currentDrive.target = -131f;
+                    joint.xDrive = currentDrive;
+                    break;
+                case "wrist_1_link":
+                    currentDrive = joint.xDrive;
+                    currentDrive.target = -84f;
+                    joint.xDrive = currentDrive;
+                    break;
+                case "wrist_2_link":
+                    currentDrive = joint.xDrive;
+                    currentDrive.target = -90f;
+                    joint.xDrive = currentDrive;
+                    break;
+                case "wrist_3_link":
+                    currentDrive = joint.xDrive;
+                    currentDrive.target = 0f;
+                    joint.xDrive = currentDrive;
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 }

@@ -7,11 +7,7 @@ using Unity.Robotics.UrdfImporter;
 
 public class UR5e_InvDiffKin
 {
-    //number of steps calculated from invdiffkin, every steps will then
-    //be applied to the following frame in RobotController.cs
-    public int num_steps_per_frame = 1;
-
-    private UR5e_Forward FK;
+    public UR5e_Forward FK;
 
 
     private ArticulationBody[] JointList;
@@ -78,7 +74,7 @@ public class UR5e_InvDiffKin
     //Compute inverse differential kinematics
     public MatrixXD ComputeInvDiffKin()
     {
-        MatrixXD TH = MatrixXD.Zeros(num_steps_per_frame, 6);
+        MatrixXD TH = MatrixXD.Zeros(1, 6);
         VectorXD qk = VectorXD.Zeros(6);
 
         
@@ -114,7 +110,7 @@ public class UR5e_InvDiffKin
         if(Mathf.Abs(vd.x)<epsilon_lin && Mathf.Abs(vd.y)<epsilon_lin && Mathf.Abs(vd.z)<epsilon_lin
         && Mathf.Abs(va.x)<epsilon_rot && Mathf.Abs(va.y)<epsilon_rot && Mathf.Abs(va.z)<epsilon_rot)
         {
-            for(int i=0;i<num_steps_per_frame;i++){
+            for(int i=0;i<1;i++){
                 for(int j=0;j<6;j++){
                     TH.Set(i,j,qk.Get(j));
                 }
@@ -131,7 +127,7 @@ public class UR5e_InvDiffKin
         int step_num = 0;
 
         //computing joint in time wrt past performance in computing TH
-        for (int step = 0; step < num_steps_per_frame; step++)
+        for (int step = 0; step < 1; step++)
         {
             //compute Jacobian Matrix with current joint angles
             MatrixXD Jac = ComputeJacobian(qk);

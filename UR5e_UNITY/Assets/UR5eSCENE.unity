@@ -345,6 +345,7 @@ GameObject:
   - component: {fileID: 39581973}
   - component: {fileID: 39581972}
   - component: {fileID: 39581974}
+  - component: {fileID: 39581975}
   m_Layer: 0
   m_Name: ur5e_real
   m_TagString: robot
@@ -407,6 +408,19 @@ MonoBehaviour:
   torque: 100
   acceleration: 10
   highLightColor: {r: 1, g: 0, b: 0, a: 1}
+--- !u!114 &39581975
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 39581970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cc5459074eb2209b39c5cf62ba79e4b5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  is_the_real_robot: 1
 --- !u!1 &62855206
 GameObject:
   m_ObjectHideFlags: 8
@@ -6544,7 +6558,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d1f30c2dfb568d163aa0954a467889a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  publishMessageFrequency: 0.1
 --- !u!1001 &881961972
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7229,7 +7242,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 941157465}
   m_LocalRotation: {x: 0, y: 0, z: 1, w: 0}
-  m_LocalPosition: {x: 0.045, y: 1.09, z: -0.267}
+  m_LocalPosition: {x: 0.292, y: 1.09, z: -0.522}
   m_LocalScale: {x: 0.06, y: 0.06, z: 0.06}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7982,6 +7995,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Target: {fileID: 941157465}
   ur5e: {fileID: 1058220259}
+  real_ur5e: {fileID: 39581970}
   selectedIndex: 0
   control: 0
   stiffness: 10000
@@ -8033,9 +8047,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1058220259}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f5442f2ece4bc4d748dbd2a907c93b76, type: 3}
+  m_Script: {fileID: 11500000, guid: cc5459074eb2209b39c5cf62ba79e4b5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  is_the_real_robot: 0
 --- !u!1001 &1065394428
 PrefabInstance:
   m_ObjectHideFlags: 0

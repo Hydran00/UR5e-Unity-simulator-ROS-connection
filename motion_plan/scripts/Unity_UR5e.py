@@ -10,7 +10,7 @@ from sensor_msgs.msg import JointState
 import rospy
 from motion_plan.msg import JointAngles
 
-SIMULATION = True
+SIMULATION = rospy.get_param('/unity_ur5e_motion/simulation')
 def main():
     topic_name = ""
     rospy.init_node('send_joints')
@@ -31,6 +31,17 @@ def main():
 
     rate = rospy.Rate(10)
     while not rospy.is_shutdown():
+        temp = JointAngles()
+        curr_state = rospy.wait_for_message('/joint_states',JointState)
+        if (SIMULATION): 
+            temp.joint_angles= ( curr_state.position[2],curr_state.position[1],
+            curr_state.position[0],curr_state.position[5],curr_state.position[6],
+            curr_state.position[7] )
+        else :
+            temp.joint_angles= ( curr_state.position[2],curr_state.position[1],
+            curr_state.position[0],curr_state.position[3],curr_state.position[4],
+            curr_state.position[5] )
+        pub2.publish(temp)
         temp =rospy.wait_for_message('/data',JointAngles)
         traj.header.stamp = rospy.Time.now()
         pts = JointTrajectoryPoint()
@@ -43,16 +54,7 @@ def main():
         traj.points.append(pts)
         # Publish the message
         pub.publish(traj)
-        curr_state = rospy.wait_for_message('/joint_states',JointState)
-        if (SIMULATION): 
-            temp.joint_angles= ( curr_state.position[2],curr_state.position[1],
-            curr_state.position[0],curr_state.position[5],curr_state.position[6],
-            curr_state.position[7] )
-        else :
-            temp.joint_angles= ( curr_state.position[2],curr_state.position[1],
-            curr_state.position[0],curr_state.position[3],curr_state.position[4],
-            curr_state.position[5] )
-        pub2.publish(temp)
+
 
 
 
