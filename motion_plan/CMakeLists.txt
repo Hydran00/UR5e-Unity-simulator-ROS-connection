@@ -13,6 +13,7 @@ moveit_ros_planning_interface
 moveit_ros_move_group
 message_generation
 std_msgs
+geometry_msgs
 )
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -70,7 +71,10 @@ std_msgs
    DEPENDENCIES
    std_msgs 
    sensor_msgs
-   
+   geometry_msgs
+   sensor_msgs
+   moveit_msgs
+   shape_msgs
  )
 
 ################################################
@@ -137,7 +141,7 @@ include_directories(
  add_executable(demo src/demo.cpp)
  add_executable(add_collisions src/add_collisions.cpp)
 add_executable(scrabble_robot_control_node src/scrabble_robot_control.cpp)
-
+#add_executable(test_zed src/test_zed.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -173,6 +177,7 @@ add_executable(scrabble_robot_control_node src/scrabble_robot_control.cpp)
    scripts/Unity_Gripper.py
    scripts/unity_moveit.py
    scripts/Unity_UR5e.py
+   scripts/Unity_Object_Pose.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

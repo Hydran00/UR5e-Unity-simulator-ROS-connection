@@ -30,6 +30,8 @@ public class RobotController : MonoBehaviour
     private ArticulationBody[] JointList;
 
     private UrdfJointRevolute[] Real_Robot_Joints;
+    
+    private Real_Robot_Feedback_Controller feedback;
 
     private Color[] prevColor;
 
@@ -82,6 +84,8 @@ public class RobotController : MonoBehaviour
 
     //The old controller
     private Controller controller;
+
+    private bool was_topic_published_last_frame = false;
 
     private void OnEnable()
     {
@@ -145,6 +149,7 @@ public class RobotController : MonoBehaviour
                     .Find(linkName)
                     .GetComponent<UrdfJointRevolute>();
         }
+        feedback = real_ur5e.GetComponent<Real_Robot_Feedback_Controller>();
         IDK = new UR5e_InvDiffKin(Target, ur5e);
     }
 
@@ -184,16 +189,30 @@ public class RobotController : MonoBehaviour
     void MoveRobot()
     {
         check_target_pos();
-
-        //set controllable virtual robot in the same position of real robot one
-        if (frame_num < 150)
+        //check if we are connected to real robot
+        if (feedback.is_topic_published==false)
         {
-            init_angles();
-            frame_num++;
+            //if not we just send robot in home position
+            set_harcoded_angles();
+            was_topic_published_last_frame=feedback.is_topic_published;
             return;
         }
         else
         {
+            if(was_topic_published_last_frame==false){
+                
+                //that means that now topic has started to be published
+                //so we need to synchronize virtual robot with real one
+                //for safety measure
+                synchronize();
+                frame_num++;
+                //we wait 200 frames for synchronization procedure
+                if(frame_num>200){
+                    was_topic_published_last_frame=true;
+                    frame_num=0;
+                }
+                return;
+            }
             //Compute inv. diff. kinematics 
             res = IDK.ComputeInvDiffKin();
 
@@ -218,14 +237,14 @@ public class RobotController : MonoBehaviour
     void check_target_pos()
     {
         //limit x position
-        if (Target.transform.position.x > 0.51)
+        if (Target.transform.position.x > 0.9)
         {
             Target.transform.position =
                 new Vector3(0.51f,
                     Target.transform.position.y,
                     Target.transform.position.z);
         }
-        if (Target.transform.position.x < -0.51)
+        if (Target.transform.position.x < -0.9)
         {
             Target.transform.position =
                 new Vector3(-0.51f,
@@ -266,57 +285,35 @@ public class RobotController : MonoBehaviour
         }
     }
     
-    
-    
-    
-    
-    void init_angles(){
-            //check if we are connected to real robot (that means at least one joint is not zero)
-            bool connected_to_real_robot = false;
-            for (int j = 0; j < 6; j++)
+    void synchronize(){
+        //if we're connected to robot then apply real robot angles to simulated robot to start simulation safely
+        {
+            int j = 0;
+            foreach (ArticulationBody joint in JointList)
             {
-                if (Mathf.Abs(Real_Robot_Joints[j].GetPosition()) > 0.001)
-                {
-                    Debug.Log("connected because "+j+" is "+Real_Robot_Joints[j].GetPosition());
-                    connected_to_real_robot = true;
-                    break;
-                }
+                ArticulationDrive currentDrive = joint.xDrive;
+                currentDrive.target =
+                    (float) Rad2Deg(Real_Robot_Joints[j].GetPosition());
+                joint.xDrive = currentDrive;
+                j++;
             }
 
-            //Assign hardcoded values to joint when we don't have real robot joint published yet
-            if (!connected_to_real_robot)
+            //move target in end effector position for safety reasons
+            VectorXD qk = VectorXD.Zeros(6);
+            for (int k = 0; k < 6; k++)
             {
-                set_harcoded_angles();
+                qk.Set(k, Real_Robot_Joints[k].GetPosition());
             }
-            else
-            //if we're connected to robot then apply real robot angles to simulated robot to start simulation safely
-            {
-                int j = 0;
-                foreach (ArticulationBody joint in JointList)
-                {
-                    ArticulationDrive currentDrive = joint.xDrive;
-                    currentDrive.target =
-                        (float) Rad2Deg(Real_Robot_Joints[j].GetPosition());
-                    joint.xDrive = currentDrive;
-                    j++;
-                }
 
-                //move target in end effector position for safety reasons
-                VectorXD qk = VectorXD.Zeros(6);
-                for (int k = 0; k < 6; k++)
-                {
-                    qk.Set(k, Real_Robot_Joints[k].GetPosition());
-                }
-
-                //need to compute fk to get ee's current position
-                MatrixXD fk_res = IDK.FK.forward(qk);
-                Vector3 pos =
-                    new Vector3((float) - fk_res.Get(0, 3),
-                        1.79f - (float) fk_res.Get(2, 3),
-                        (float) fk_res.Get(1, 3));
-                Debug.Log (pos);
-                Target.transform.position = pos;
-            }
+            //need to compute fk to get ee's current position
+            MatrixXD fk_res = IDK.FK.forward(qk);
+            Vector3 pos =
+                new Vector3((float) - fk_res.Get(0, 3),
+                    1.79f - (float) fk_res.Get(2, 3),
+                    (float) fk_res.Get(1, 3));
+            Debug.Log (pos);
+            Target.transform.position = pos;
+        }
     }
     void set_harcoded_angles()
     {

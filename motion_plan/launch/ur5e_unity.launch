@@ -10,7 +10,7 @@
  	 <node name="unity_ur5e_motion" pkg="motion_plan" type="Unity_UR5e.py" output="screen">
  	        <param name="simulation" value="$(arg simulation)" />
  	 </node>
- 	<node name="unity_gripper_control" pkg="motion_plan" type="Unity_Gripper.py" output="screen">
+ 	<!--<node name="unity_gripper_control" pkg="motion_plan" type="Unity_Gripper.py" output="screen">
  	        <param name="simulation" value="$(arg simulation)" /> 
- 	</node>
+ 	</node>-->
  </launch>

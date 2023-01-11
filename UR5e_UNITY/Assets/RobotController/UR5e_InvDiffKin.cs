@@ -32,8 +32,9 @@ public class UR5e_InvDiffKin
     private GameObject ur5e;
 
     //define convergence parameter
-    private const double linear_K= 0.01;
-    private const double angular_K= 0.1;
+    private const double linear_K= 1;
+    private const double angular_K= 0.3;
+
 
     //z offset
     private const float z_offset = 1.79f;
@@ -87,18 +88,18 @@ public class UR5e_InvDiffKin
         //computing EE position for evaluating desired velocity
         fk_res = FK.forward(qk);
 
-        //compute target's linear velocity
-        Vector3 vd =
-            (target.transform.position - old_pos) /Time.fixedDeltaTime;
+        //compute distance from target's position for error reduction
+        Vector3 e_o =
+            (target.transform.position - old_pos);
         
-        //compute target's angular velocity
+        //compute distance from target's orientation for error reduction
         Quaternion delta_rot =old_rot  * Quaternion.Inverse(target.transform.rotation);
         Vector3 eulerRot = new Vector3(
                 Mathf.DeltaAngle(0, -delta_rot.eulerAngles.x),
                 Mathf.DeltaAngle(0, -delta_rot.eulerAngles.y),
                 Mathf.DeltaAngle(-180, delta_rot.eulerAngles.z));
         eulerRot *= Mathf.Deg2Rad;
-        Vector3 va = eulerRot;
+        Vector3 e_w = eulerRot;
 
         //update old values
         old_pos = new Vector3((float)-fk_res.Get(0,3),z_offset-(float)fk_res.Get(2,3),(float)fk_res.Get(1,3));
@@ -107,8 +108,8 @@ public class UR5e_InvDiffKin
         old_rot = ConvertToUnity(old_rot);
 
         //convergence criteria for avoiding loops
-        if(Mathf.Abs(vd.x)<epsilon_lin && Mathf.Abs(vd.y)<epsilon_lin && Mathf.Abs(vd.z)<epsilon_lin
-        && Mathf.Abs(va.x)<epsilon_rot && Mathf.Abs(va.y)<epsilon_rot && Mathf.Abs(va.z)<epsilon_rot)
+        if(Mathf.Abs(e_o.x)<epsilon_lin && Mathf.Abs(e_o.y)<epsilon_lin && Mathf.Abs(e_o.z)<epsilon_lin
+        && Mathf.Abs(e_w.x)<epsilon_rot && Mathf.Abs(e_w.y)<epsilon_rot && Mathf.Abs(e_w.z)<epsilon_rot)
         {
             for(int i=0;i<1;i++){
                 for(int j=0;j<6;j++){
@@ -119,15 +120,18 @@ public class UR5e_InvDiffKin
         }
 
         //creating velocity vector for each axis
-        vel = new VectorXD(new double[] {-vd.x,vd.z,-vd.y,-va.x,va.z,-va.y});
+        vel = new VectorXD(new double[] {-e_o.x,e_o.z,-e_o.y,-e_w.x,e_w.z,-e_w.y});
+        //Debug.Log(Mathf.Sqrt(e_o.x*e_o.x+ e_o.z*e_o.z+ e_o.y*e_o.y));
 
         //instantiate vector for updating new joint angles
         VectorXD qk1 = VectorXD.Zeros(6);
 
-        int step_num = 0;
+        //Define number of iteration
+        int step_num = 1;
+        double alpha = 10*Time.fixedDeltaTime;
 
         //computing joint in time wrt past performance in computing TH
-        for (int step = 0; step < 1; step++)
+        for (int step = 0; step < step_num; step++)
         {
             //compute Jacobian Matrix with current joint angles
             MatrixXD Jac = ComputeJacobian(qk);
@@ -135,15 +139,15 @@ public class UR5e_InvDiffKin
             //Compute Jacobian Inverse
             MatrixXD JacInv = inverse(Jac);//Jac.Inverse();
 
-            //COMPUTING qk1 = qk + JacInv * vel * K
+            //COMPUTING qk1 = qk + alpha * JacInv  * K * e
 
-            //compute vel * K
-            vel.Set(0, vel.Get(0) * linear_K);
-            vel.Set(1, vel.Get(1) * linear_K);
-            vel.Set(2, vel.Get(2) * linear_K);
-            vel.Set(3, vel.Get(3) * angular_K);
-            vel.Set(4, vel.Get(4) * angular_K);
-            vel.Set(5, vel.Get(5) * angular_K);
+            //compute alpha * K * e
+            vel.Set(0, alpha * vel.Get(0) * linear_K);
+            vel.Set(1, alpha * vel.Get(1) * linear_K);
+            vel.Set(2, alpha * vel.Get(2) * linear_K);
+            vel.Set(3, alpha * vel.Get(3) * angular_K);
+            vel.Set(4, alpha * vel.Get(4) * angular_K);
+            vel.Set(5, alpha * vel.Get(5) * angular_K);
 
             //Matrix multiplication (6x6 * 6x1)
             double temp = 0;
@@ -164,12 +168,11 @@ public class UR5e_InvDiffKin
             //adding new computed row to the trajectory (q = [q; qk1])
             for (int i = 0; i < 6; i++)
             {
-                TH.Set(step_num, i, qk1.Get(i));
+                TH.Set(step, i, qk1.Get(i));
             }
 
             //updating qk with qk1
             qk = qk1;
-            step_num++;
         }
         return TH;
     }
@@ -388,112 +391,112 @@ public class UR5e_InvDiffKin
     // dimension of [,]A
     private void getCofactor(MatrixXD A, MatrixXD temp, int p, int q, int n)
     {
-    int i = 0, j = 0;
+        int i = 0, j = 0;
  
-    // Looping for each element of the matrix
-    for (int row = 0; row < n; row++)
-    {
-        for (int col = 0; col < n; col++)
+        // Looping for each element of the matrix
+        for (int row = 0; row < n; row++)
         {
-            // Copying into temporary matrix only those element
-            // which are not in given row and column
-            if (row != p && col != q)
+            for (int col = 0; col < n; col++)
             {
-                temp.Set(i, j++,A.Get(row, col));
- 
-                // Row is filled, so increase row index and
-                // reset col index
-                if (j == n - 1)
+                // Copying into temporary matrix only those element
+                // which are not in given row and column
+                if (row != p && col != q)
                 {
-                    j = 0;
-                    i++;
+                    temp.Set(i, j++,A.Get(row, col));
+    
+                    // Row is filled, so increase row index and
+                    // reset col index
+                    if (j == n - 1)
+                    {
+                        j = 0;
+                        i++;
+                    }
                 }
             }
         }
-    }
 
     }
     /* Recursive function for finding determinant of matrix.
     n is current dimension of [,]A. */
-private double determinant(MatrixXD A, int n)
-    {
-    double D = 0; // Initialize result
- 
-    // Base case : if matrix contains single element
-    if (n == 1)
-        return A.Get(0, 0);
- 
-    MatrixXD temp = MatrixXD.Zeros(6,6); // To store cofactors
- 
-    int sign = 1; // To store sign multiplier
- 
-    // Iterate for each element of first row
-    for (int f = 0; f < n; f++)
-    {
-        // Getting Cofactor of A[0,f]
-        getCofactor(A, temp, 0, f, n);
-        D += sign * A.Get(0, f) * determinant(temp, n - 1);
- 
-        // terms are to be added with alternate sign
-        sign = -sign;
+    private double determinant(MatrixXD A, int n)
+        {
+        double D = 0; // Initialize result
+    
+        // Base case : if matrix contains single element
+        if (n == 1)
+            return A.Get(0, 0);
+    
+        MatrixXD temp = MatrixXD.Zeros(6,6); // To store cofactors
+    
+        int sign = 1; // To store sign multiplier
+    
+        // Iterate for each element of first row
+        for (int f = 0; f < n; f++)
+        {
+            // Getting Cofactor of A[0,f]
+            getCofactor(A, temp, 0, f, n);
+            D += sign * A.Get(0, f) * determinant(temp, n - 1);
+    
+            // terms are to be added with alternate sign
+            sign = -sign;
+        }
+        return D;
     }
-    return D;
-}
  
 // Function to get adjoint of A[N,N] in adj[N,N].
-private void adjoint(MatrixXD A, MatrixXD adj)
-{
-    if (N == 1)
+    private void adjoint(MatrixXD A, MatrixXD adj)
     {
-        adj.Set(0, 0, 1);
-        return;
-    }
- 
-    // temp is used to store cofactors of [,]A
-    int sign = 1;
-    MatrixXD temp = MatrixXD.Zeros(6,6);
- 
-    for (int i = 0; i < N; i++)
-    {
-        for (int j = 0; j < N; j++)
+        if (N == 1)
         {
-            // Get cofactor of A[i,j]
-            getCofactor(A, temp, i, j, N);
- 
-            // sign of adj[j,i] positive if sum of row
-            // and column indexes is even.
-            sign = ((i + j) % 2 == 0)? 1: -1;
- 
-            // Interchanging rows and columns to get the
-            // transpose of the cofactor matrix
-            adj.Set(j, i, (sign) * (determinant(temp, N - 1)));
+            adj.Set(0, 0, 1);
+            return;
+        }
+    
+        // temp is used to store cofactors of [,]A
+        int sign = 1;
+        MatrixXD temp = MatrixXD.Zeros(6,6);
+    
+        for (int i = 0; i < N; i++)
+        {
+            for (int j = 0; j < N; j++)
+            {
+                // Get cofactor of A[i,j]
+                getCofactor(A, temp, i, j, N);
+    
+                // sign of adj[j,i] positive if sum of row
+                // and column indexes is even.
+                sign = ((i + j) % 2 == 0)? 1: -1;
+    
+                // Interchanging rows and columns to get the
+                // transpose of the cofactor matrix
+                adj.Set(j, i, (sign) * (determinant(temp, N - 1)));
+            }
         }
     }
-}
  
 // Function to calculate and store inverse, returns false if
 // matrix is singular
-private MatrixXD inverse(MatrixXD A)
-{
-    MatrixXD inv = MatrixXD.Zeros(6,6);
-    // Find determinant of [,]A
-    double det = determinant(A, N);
-    if (det == 0)
+    private MatrixXD inverse(MatrixXD A)
     {
+        MatrixXD inv = MatrixXD.Zeros(6,6);
+        // Find determinant of [,]A
+        double det = determinant(A, N);
+        if (det == 0)
+        {
+            return inv;
+        }
+    
+        // Find adjoint
+        MatrixXD adj = MatrixXD.Zeros(6,6);
+        adjoint(A, adj);
+    
+        // Find Inverse using formula "inverse(A) = adj(A)/det(A)"
+        for (int i = 0; i < N; i++)
+            for (int j = 0; j < N; j++)
+                inv.Set(i, j,adj.Get(i, j)/det);
+    
         return inv;
     }
- 
-    // Find adjoint
-    MatrixXD adj = MatrixXD.Zeros(6,6);
-    adjoint(A, adj);
- 
-    // Find Inverse using formula "inverse(A) = adj(A)/det(A)"
-    for (int i = 0; i < N; i++)
-        for (int j = 0; j < N; j++)
-            inv.Set(i, j,adj.Get(i, j)/det);
- 
-    return inv;
-}
  
 // Generic function to display the matrix. We use it to display
 // both adjoin and inverse. adjoin is integer matrix and inverse

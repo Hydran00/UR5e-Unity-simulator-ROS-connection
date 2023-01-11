@@ -53,6 +53,9 @@ public class Real_Robot_Feedback_Controller : MonoBehaviour
 
     public float acceleration = 5f; // Units: m/s^2 / degree/s^2
 
+    public bool is_topic_published = false;
+
+    private int frame_num;
 
     [Tooltip("Color to highlight the currently selected Join")]
     public Color highLightColor = new Color(1, 0, 0, 1);
@@ -70,7 +73,7 @@ public class Real_Robot_Feedback_Controller : MonoBehaviour
     void Start()
     {   
         ROSConnection.GetOrCreateInstance().Subscribe<JointAnglesMsg>("/real_robot_joint_state", callback);
-
+        frame_num=0;
         previousIndex = selectedIndex = 1;
         this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
@@ -108,6 +111,14 @@ public class Real_Robot_Feedback_Controller : MonoBehaviour
             }
         }
     }
+    void Update()
+    {   
+        //check if we are receveing messages in the last 200 frames
+        if(frame_num>300 && is_topic_published==true){
+            is_topic_published = false;
+        }
+        frame_num+=1;
+    }
 
     void UpdateControlType(JointControl joint)
     {
@@ -139,6 +150,9 @@ public class Real_Robot_Feedback_Controller : MonoBehaviour
 
     //set angles of real robot    
     void callback(JointAnglesMsg angles){
+        //restart counter if we receive a message
+        frame_num=0;
+        is_topic_published=true;
         int i=0;
         foreach (ArticulationBody joint in JointList){
         ArticulationDrive currentDrive = joint.xDrive;

@@ -1,9 +1,10 @@
+#pylint: disable-all
 #!/usr/bin/env python3
 # Echo client program
 import socket
 import rospy
 from motion_plan.msg import Gripper_cmd
-from std_srvs.srv import Trigger
+from std_srvs.srv import Trigger, TriggerRequest
 import rospkg
 
 
@@ -15,38 +16,42 @@ path = rospkg.RosPack().get_path('motion_plan')
 
 def callback(data,args):
     if(SIMULATION==False):
+        #passing socket to callback
         s = args[0]
-        rospy.wait_for_service('/ur_hardware_interface/resend_robot_program')
-    script = ''
+    script_path = ''
+    #choose which file has to be sent to the robot
     if(data.close == False):
-        script = path + '/scripts/open2.script'
+        script_path = path + '/scripts/open2.script'
         print("\033[96mOpening Gripper!\033[0m")
     elif(data.close == True):
-        script = path + '/scripts/close.script'
+        script_path = path + '/scripts/close.script'
         print("\033[96mClosing Gripper!\033[0m")
     else:
         print("Invalid argument!")
     if(SIMULATION==True):
         return
-    f = open (script, "rb")
+    f = open (script_path, "rb")
     l = f.read(4096)
     while (l):
         s.send(l)
         l = f.read(4096)
     f.close()
-    s.close()
-    rospy.sleep(1.5)
+    resend_robot_program()
     
-    #Resend robot program
-    service = rospy.ServiceProxy('/ur_hardware_interface/resend_robot_program', Trigger)
-    service()
+def resend_robot_program():
+    rospy.sleep(1.5)
+    sos_service = rospy.ServiceProxy('/ur_hardware_interface/resend_robot_program', Trigger)
+    sos = TriggerRequest()
+    result = sos_service(sos)
+    # print(result)
+    rospy.sleep(1.0)
     
     print("service called")
     rospy.sleep(1.5)
 
 def listener(my_socket):
     rospy.init_node("unity_gripper_control", anonymous=True)
-    #seems to be thath the only way to pass arguments to callback is using lambda func
+    #seems to be that the only way to pass arguments to callback is using lambda func
     callback_lambda = lambda x: callback(x,my_socket)
     rospy.Subscriber("/gripper_cmd", Gripper_cmd, callback_lambda,queue_size=10)
     rospy.spin()

@@ -29,9 +29,9 @@ def main():
                         'elbow_joint', 'wrist_1_joint', 'wrist_2_joint',
                         'wrist_3_joint']
 
-    rate = rospy.Rate(10)
+    rate = rospy.Rate(50)
     while not rospy.is_shutdown():
-        temp = JointAngles()
+        temp = JointAngles() 
         curr_state = rospy.wait_for_message('/joint_states',JointState)
         if (SIMULATION): 
             temp.joint_angles= ( curr_state.position[2],curr_state.position[1],
@@ -42,7 +42,7 @@ def main():
             curr_state.position[0],curr_state.position[3],curr_state.position[4],
             curr_state.position[5] )
         pub2.publish(temp)
-        temp =rospy.wait_for_message('/data',JointAngles)
+        temp =rospy.wait_for_message('/ur5e_trajectory_command',JointAngles)
         traj.header.stamp = rospy.Time.now()
         pts = JointTrajectoryPoint()
         pts.positions = [temp.joint_angles[0],temp.joint_angles[1], temp.joint_angles[2],
@@ -54,6 +54,7 @@ def main():
         traj.points.append(pts)
         # Publish the message
         pub.publish(traj)
+        rate.sleep()
 
 
 
