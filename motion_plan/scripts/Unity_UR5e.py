@@ -1,3 +1,4 @@
+#pylint: disable-all
 #!/usr/bin/python3
 #
 # Send joint values to UR5 using messages
@@ -53,7 +54,7 @@ def main():
         traj.points = []
         traj.points.append(pts)
         # Publish the message
-        pub.publish(traj)
+        #pub.publish(traj)
         rate.sleep()
 
 

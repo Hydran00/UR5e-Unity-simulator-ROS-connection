@@ -178,6 +178,7 @@ add_executable(scrabble_robot_control_node src/scrabble_robot_control.cpp)
    scripts/unity_moveit.py
    scripts/Unity_UR5e.py
    scripts/Unity_Object_Pose.py
+   scripts/zed_tracking.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

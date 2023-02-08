@@ -1,3 +1,4 @@
+# pylint: disable-all
 #  Copyright 2020 Unity Technologies
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
@@ -46,7 +47,11 @@ class TcpServer:
             self.loginfo("Using 'tcp_ip' override from constructor: {}".format(tcp_ip))
             self.tcp_ip = tcp_ip
         else:
-            self.tcp_ip = rospy.get_param("~tcp_ip", "0.0.0.0")
+            #self.tcp_ip = rospy.get_param("~tcp_ip", "0.0.0.0")
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            self.tcp_ip = s.getsockname()[0]
+            s.close()
 
         if tcp_port:
             self.loginfo("Using 'tcp_port' override from constructor: {}".format(tcp_port))

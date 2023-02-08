@@ -8,13 +8,14 @@ public class CupPositionController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {   
-        ROSConnection.GetOrCreateInstance().Subscribe<PoseStampedMsg>("/cup_position", callback);
+        ROSConnection.GetOrCreateInstance().Subscribe<PoseStampedMsg>("/cube_pose", callback);
     }
     // Update is called once per frame
     void Update()
     {   
     }
     void callback(PoseStampedMsg pose){
+        Debug.Log("pose received");
        // Vector3<FLU> rosPos2;
         //Update position
         Vector3 pos = new Vector3((float)pose.pose.position.x,
