@@ -141,7 +141,6 @@ include_directories(
  add_executable(demo src/demo.cpp)
  add_executable(add_collisions src/add_collisions.cpp)
 add_executable(scrabble_robot_control_node src/scrabble_robot_control.cpp)
-#add_executable(test_zed src/test_zed.cpp)
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
 ## target back to the shorter version for ease of user use
@@ -175,10 +174,8 @@ add_executable(scrabble_robot_control_node src/scrabble_robot_control.cpp)
 ## in contrast to setup.py, you can choose the destination
  catkin_install_python(PROGRAMS
    scripts/Unity_Gripper.py
-   scripts/unity_moveit.py
    scripts/Unity_UR5e.py
-   scripts/Unity_Object_Pose.py
-   scripts/zed_tracking.py
+   scripts/three_finger_gripper_controller.py
    DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
  )
 

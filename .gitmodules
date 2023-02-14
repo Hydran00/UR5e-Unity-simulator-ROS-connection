@@ -1,0 +1,3 @@
+[submodule "Cube-Pose-Estimation-with-ArUco"]
+	path = Cube-Pose-Estimation-with-ArUco
+	url = https://github.com/Hydran00/Cube-Pose-Estimation-with-ArUco

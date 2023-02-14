@@ -32,6 +32,7 @@ public class CupPositionController : MonoBehaviour
         rot.z = (float)pose.pose.orientation.z;
         rot.w = (float)pose.pose.orientation.w;
         cup.transform.rotation=rot;
+        Debug.Log(cup.transform.rotation.ToString());
     }
 
     Vector3 ConvertPositionToUnity(Vector3 pos){

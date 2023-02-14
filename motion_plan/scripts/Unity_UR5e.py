@@ -30,7 +30,7 @@ def main():
                         'elbow_joint', 'wrist_1_joint', 'wrist_2_joint',
                         'wrist_3_joint']
 
-    rate = rospy.Rate(50)
+    rate = rospy.Rate(24)
     while not rospy.is_shutdown():
         temp = JointAngles() 
         curr_state = rospy.wait_for_message('/joint_states',JointState)
@@ -54,7 +54,7 @@ def main():
         traj.points = []
         traj.points.append(pts)
         # Publish the message
-        #pub.publish(traj)
+        pub.publish(traj)
         rate.sleep()
 
 

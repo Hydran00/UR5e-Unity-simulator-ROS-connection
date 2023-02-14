@@ -26,7 +26,7 @@ public class JointAngleSender : MonoBehaviour
 
     // ROS Connector
     ROSConnection m_Ros;
-    public float publishMessageFrequency = 0.00001f;
+    public float publishMessageFrequency =0.016666667f;
     private float timeElapsed;
 
     void Start()

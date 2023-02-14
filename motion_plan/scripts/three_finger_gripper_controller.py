@@ -1,16 +1,15 @@
-#pylint: disable-all
-#!/usr/bin/env python3
-# Echo client program
-import socket
-import rospy
-from motion_plan.msg import Gripper_cmd
-from std_srvs.srv import Trigger, TriggerRequest
+# Description
+# File contains some necessary control algorithms for HyQ
+# Author: Michele Focchi
+# Date: 23-10-2022
+# pylint: disable-all
+import math
 import rospkg
+import socket
 import numpy as np
+import rospy as ros
+from std_srvs.srv import Trigger, TriggerRequest
 
-
-path = rospkg.RosPack().get_path('motion_plan')
-SIMULATION=rospy.get_param('/unity_gripper_control/simulation')
 class SecondOrderFilter():
     def __init__(self, size):
         self.filter_1 = np.zeros(size)
@@ -39,13 +38,13 @@ class GripperManager():
         self.SO_filter.initFilter(self.q_des_gripper,dt)
 
     def resend_robot_program(self):
-        rospy.sleep(1.5)
-        rospy.wait_for_service("/ur_hardware_interface/resend_robot_program")
-        sos_service = rospy.ServiceProxy('/ur_hardware_interface/resend_robot_program', Trigger)
+        ros.sleep(1.5)
+        ros.wait_for_service("/ur_hardware_interface/resend_robot_program")
+        sos_service = ros.ServiceProxy('/ur_hardware_interface/resend_robot_program', Trigger)
         sos = TriggerRequest()
         result = sos_service(sos)
         # print(result)
-        rospy.sleep(0.5)
+        ros.sleep(0.1)
 
     def mapToGripperJoints(self, diameter):
         return (diameter - 22) / (130 - 22) * (-np.pi) + np.pi  # D = 130-> q = 0, D = 22 -> q = 3.14
@@ -109,31 +108,6 @@ class GripperManager():
         print("Gripper moved, now resend robot program")
         self.resend_robot_program()
         return
-def callback(data):
-    if(SIMULATION==False):
-        #passing socket to callback
-        print("here")
-        g = GripperManager()
-        if(data.close == True):
-            g.move_gripper(diameter=70)
-        else:
-            g.move_gripper(diameter=100)
-
-def listener():
-    rospy.init_node("unity_gripper_control", anonymous=True)
-    #seems to be that the only way to pass arguments to callback is using lambda func
-    callback_lambda = lambda x: callback(x)
-    rospy.Subscriber("/gripper_cmd", Gripper_cmd, callback_lambda,queue_size=10)
-    rospy.spin()
-    # spin() simply keeps python from exiting until this node is stopped
-    
-if __name__ == '__main__':
-    print("\033[1m\033[96mGripper ready to receive command! :)\033[0m")
-    with open(str(path+"/scripts/hello_world.txt"), 'r') as fin:
-        print("\033[91m"+fin.read()+"\033[0m")
-    if(SIMULATION==False):
-        print("\033[1m\033[95mYou are in real-robot mode\033[0m")
-    else:
-        print("\033[1m\033[95mYou are in simulation mode\033[0m")
-    listener()
-
+if __name__=="__main__":
+    g = GripperManager()
+    g.move_gripper()

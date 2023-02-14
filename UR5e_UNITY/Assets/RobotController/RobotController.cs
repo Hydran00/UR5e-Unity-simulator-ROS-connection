@@ -99,6 +99,7 @@ public class RobotController : MonoBehaviour
 
     void Start()
     {
+        Application.targetFrameRate = 60;
         previousIndex = selectedIndex = 1;
         this.gameObject.AddComponent<FKRobot>();
         articulationChain = this.GetComponentsInChildren<ArticulationBody>();
@@ -227,12 +228,6 @@ public class RobotController : MonoBehaviour
             }
         }
     }
-    
-    
-    
-    
-    
-    
     //limit target's position space
     void check_target_pos()
     {
